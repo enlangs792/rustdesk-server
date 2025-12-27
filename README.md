@@ -1,7 +1,7 @@
 
 # 关于此分支
 
-
+新增 mysql 数据库后端支持。
 
 [![build](https://github.com/lejianwen/rustdesk-server/actions/workflows/build.yaml/badge.svg)](https://github.com/lejianwen/rustdesk-server/actions/workflows/build.yaml)
 
@@ -86,6 +86,7 @@
 ## 如何自行构建
 
 ```bash
+git submodule update --init --recursive
 cargo build --release
 ```
 
