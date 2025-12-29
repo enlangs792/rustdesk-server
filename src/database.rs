@@ -153,6 +153,8 @@ impl Database {
             }
             DbType::MySql => {
                 let pool = self.mysql_pool.as_ref().unwrap();
+                let mut conn = pool.get().await?;
+                // MySQL 需要分开执行每个语句
                 sqlx::query(
                     "
                     create table if not exists peer (
@@ -165,15 +167,36 @@ impl Database {
                         status tinyint,
                         note varchar(300),
                         info text not null
-                    ) engine=InnoDB default charset=utf8mb4;
-                    create unique index if not exists index_peer_id on peer (id);
-                    create index if not exists index_peer_user on peer (user);
-                    create index if not exists index_peer_created_at on peer (created_at);
-                    create index if not exists index_peer_status on peer (status);
+                    ) engine=InnoDB default charset=utf8mb4
                 ",
                 )
-                .execute(pool.get().await?.deref_mut())
+                .execute(conn.deref_mut())
                 .await?;
+                
+                // MySQL 5.7 不支持 IF NOT EXISTS，尝试创建索引，如果已存在则忽略错误
+                // 注意：BLOB/TEXT 列需要指定前缀长度
+                let create_indexes = vec![
+                    ("create unique index index_peer_id on peer (id)", "index_peer_id"),
+                    ("create index index_peer_user on peer (user(255))", "index_peer_user"),
+                    ("create index index_peer_created_at on peer (created_at)", "index_peer_created_at"),
+                    ("create index index_peer_status on peer (status)", "index_peer_status"),
+                ];
+                
+                for (sql, index_name) in create_indexes {
+                    if let Err(e) = sqlx::query(sql).execute(conn.deref_mut()).await {
+                        // 1061 表示索引已存在，这是正常的，可以忽略
+                        // 其他错误应该被报告
+                        let should_warn = match e.as_database_error() {
+                            Some(db_err) => {
+                                !db_err.code().map(|c| c == "1061").unwrap_or(false)
+                            }
+                            None => true,
+                        };
+                        if should_warn {
+                            log::warn!("创建索引 {} 失败: {}", index_name, e);
+                        }
+                    }
+                }
             }
         }
         Ok(())
