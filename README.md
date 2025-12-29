@@ -3,7 +3,9 @@
 
 新增 mysql 数据库后端支持。
 
-[![build](https://github.com/lejianwen/rustdesk-server/actions/workflows/build.yaml/badge.svg)](https://github.com/lejianwen/rustdesk-server/actions/workflows/build.yaml)
+docker image: cd00285/rustdesk-server-s6-mysql:v1.1.2
+
+[![build](https://github.com/enlangs792/rustdesk-server/actions/workflows/build.yaml/badge.svg)](https://github.com/enlangs792/rustdesk-server/actions/workflows/build.yaml)
 
 - 解决当客户端登录了`API`账号时链接超时的问题
 - s6镜像添加了`API`支持，`API`开源地址 https://github.com/lejianwen/rustdesk-api
